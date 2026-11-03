@@ -21,7 +21,9 @@ open Package.swift          # opens the package in Xcode for GUI editing / previ
 - **Landing page** (tic.kasvith.me) is a self-contained Astro + pnpm project in `site/` — all Node
   tooling stays there (see `site/README.md`); never add JS files to the repo root.
 - **Install/update script**: `site/public/install.sh`, served as
-  `curl -fsSL https://tic.kasvith.me/install.sh | sh`. curl adds no quarantine flag (browsers do), so
+  `curl -fsSL https://raw.githubusercontent.com/pierrenel/tic/main/site/public/install.sh | sh` in this fork
+  (upstream serves it from tic.kasvith.me). It, `UpdateChecker`, and `UpdateInstaller` all read the
+  **pierrenel/tic** releases, so the fork never updates itself back to upstream's build. curl adds no quarantine flag (browsers do), so
   the unsigned app opens without Gatekeeper's block. It verifies `Tic.zip.sha256` and quits only the
   app process (the `pgrep -f` pattern is anchored, so `Tic --mcp` helpers and their wrappers survive).
   Test it with `TIC_DEST=<tmp dir>` and a stub `open` first on `PATH`.

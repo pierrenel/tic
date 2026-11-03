@@ -36,7 +36,7 @@ struct UpdateInstaller: Sendable {
     /// Pinned to the version the user was offered, not `latest`, so a release landing mid-update can't
     /// swap in something they didn't see the notes for.
     static func assetURL(_ name: String, version: String) -> URL {
-        URL(string: "https://github.com/kasvith/tic/releases/download/v\(version)/\(name)")!
+        URL(string: "https://github.com/pierrenel/tic/releases/download/v\(version)/\(name)")!
     }
 
     /// Replaces the app at `app` with `version`. On any failure the installed copy is left as it was.

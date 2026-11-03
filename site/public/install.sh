@@ -1,7 +1,7 @@
 #!/bin/sh
-# Installs or updates Tic (https://tic.kasvith.me):
+# Installs or updates Tic — the pierrenel/tic fork of https://github.com/kasvith/tic:
 #
-#   curl -fsSL https://tic.kasvith.me/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/pierrenel/tic/main/site/public/install.sh | sh
 #
 # Tic isn't notarized, and a browser download gets macOS's quarantine flag, which makes Gatekeeper
 # block the first launch. curl doesn't add that flag, so Tic installed this way just opens — no
@@ -32,7 +32,7 @@ main() {
     trap 'rm -rf "$tmp"' EXIT
 
     echo "Downloading Tic…"
-    base=https://github.com/kasvith/tic/releases/latest/download
+    base=https://github.com/pierrenel/tic/releases/latest/download
     curl -fsSL "$base/Tic.zip" -o "$tmp/Tic.zip"
     curl -fsSL "$base/Tic.zip.sha256" -o "$tmp/Tic.zip.sha256"
     (cd "$tmp" && shasum -a 256 -c Tic.zip.sha256 >/dev/null 2>&1) || fail "the download didn't match its checksum."

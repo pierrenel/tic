@@ -52,7 +52,7 @@ final class UpdateChecker {
 
     /// The list, not `releases/latest`: one request brings the notes for every version since this one.
     private nonisolated static let releasesURL =
-        URL(string: "https://api.github.com/repos/kasvith/tic/releases?per_page=20")!
+        URL(string: "https://api.github.com/repos/pierrenel/tic/releases?per_page=20")!
     private static let interval: TimeInterval = 24 * 60 * 60
     private static let notifiedVersionKey = "updateNotifiedVersion"
     private static let seenVersionKey = "updateSeenVersion"

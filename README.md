@@ -3,9 +3,9 @@
   <h1>Tic</h1>
   <p><strong>Floating, Stickies-style task lists for macOS.</strong></p>
 
-[![CI](https://github.com/kasvith/tic/actions/workflows/ci.yml/badge.svg)](https://github.com/kasvith/tic/actions/workflows/ci.yml)
-[![GitHub Release](https://img.shields.io/github/v/release/kasvith/tic)](https://github.com/kasvith/tic/releases)
-[![GitHub Downloads](https://img.shields.io/github/downloads/kasvith/tic/total)](https://github.com/kasvith/tic/releases)
+[![CI](https://github.com/pierrenel/tic/actions/workflows/ci.yml/badge.svg)](https://github.com/pierrenel/tic/actions/workflows/ci.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/pierrenel/tic)](https://github.com/pierrenel/tic/releases)
+[![GitHub Downloads](https://img.shields.io/github/downloads/pierrenel/tic/total)](https://github.com/pierrenel/tic/releases)
 
 <a href="https://www.producthunt.com/products/tic?utm_source=badge-follow&utm_medium=badge&utm_source=badge-tic" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/follow.svg?product_id=1317575&theme=light" alt="Tic - To&#0045;do&#0032;lists&#0032;that&#0032;live&#0032;on&#0032;your&#0032;desktop&#0044;&#0032;not&#0032;in&#0032;a&#0032;menu&#0032;bar | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
@@ -18,7 +18,9 @@ bar click — glance at them, check things off, drag them around. Each note is i
 
 ## What's different in this fork
 
-This is a fork of [kasvith/tic](https://github.com/kasvith/tic) with a few changes on top:
+This is a fork of [kasvith/tic](https://github.com/kasvith/tic) with a few changes on top. The install
+script, release downloads, and the in-app updater all point at this fork, so updating never swaps
+these changes back out for upstream's build.
 
 - **Mark a task to do today** — double-click a task's text to star it (⭐). It moves, with its
   subtasks, to the top of its group (the top of the list, or the top of its parent's subtasks),
@@ -65,7 +67,7 @@ macOS **14 (Sonoma)** or later, on Apple silicon.
 Paste this in Terminal:
 
 ```sh
-curl -fsSL https://tic.kasvith.me/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/pierrenel/tic/main/site/public/install.sh | sh
 ```
 
 It installs Tic to `/Applications` (or `~/Applications` on a non-admin account) and opens it. Run it
@@ -74,7 +76,7 @@ a browser, which makes Gatekeeper block the first launch; `curl` doesn't add tha
 just works. The script is short and readable: [`site/public/install.sh`](site/public/install.sh).
 
 **Or download it by hand:** get the `.dmg` from the
-[latest release](https://github.com/kasvith/tic/releases/latest), move **`Tic.app`** to
+[latest release](https://github.com/pierrenel/tic/releases/latest), move **`Tic.app`** to
 `/Applications`, then clear the quarantine flag once:
 
 ```sh
