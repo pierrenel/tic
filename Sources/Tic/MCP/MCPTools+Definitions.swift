@@ -76,11 +76,12 @@ extension MCPTools {
                  ], required: ["note_id", "tasks"])),
 
             Tool(name: "update_task",
-                 description: "Edit a task's text and/or tick it done. Ticking a parent ticks its subtree; finishing the last child auto-ticks the parent.",
+                 description: "Edit a task's text, tick it done, and/or mark it to do today. Ticking a parent ticks its subtree; finishing the last child auto-ticks the parent. Ticking a task done clears its today mark; marking it today moves it to the top of its group.",
                  inputSchema: object([
                     "task_id": prop("string", "The task's id"),
                     "text": prop("string", "New text (must not be blank)"),
                     "done": prop("boolean", "Mark done or not done"),
+                    "today": prop("boolean", "Mark (or unmark) the task to do today"),
                  ], required: ["task_id"])),
 
             Tool(name: "move_task",

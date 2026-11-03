@@ -172,7 +172,7 @@ export const shortcuts: { keys: string[]; action: string }[] = [
 export const faqs = [
   {
     q: 'How do I put a to-do list on my Mac desktop?',
-    a: 'Install Tic and press ⌘N. The list opens as a sticky note on the desktop and stays where you put it. Click the pin to keep it on top of other windows, or double-click the title to roll it up to a bar.',
+    a: 'Install Tic and press ⇧⌘N. The list opens as a sticky note on the desktop and stays where you put it. Click the pin to keep it on top of other windows, or double-click the title to roll it up to a bar.',
     link: { href: '/guides/to-do-list-on-mac-desktop/', label: 'Other ways to keep a list on your desktop' },
   },
   {

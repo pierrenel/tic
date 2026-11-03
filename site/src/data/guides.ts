@@ -116,7 +116,7 @@ export const guides: Guide[] = [
       },
       {
         q: 'Can I move my Stickies lists into Tic?',
-        a: 'Not automatically. Make a list in Tic with ⌘N, then type or paste each line from the Stickies note and press Return after each one. Shift-Tab nests a line under the one above.',
+        a: 'Not automatically. Make a list in Tic with ⇧⌘N, then type or paste each line from the Stickies note and press Return after each one. Shift-Tab nests a line under the one above.',
       },
     ],
     compare: ['stickies'],

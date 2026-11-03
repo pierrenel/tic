@@ -18,18 +18,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// ⌘N → New Note while Tic is the active app. A menu-style `MenuBarExtra` button's
-    /// `keyboardShortcut` only fires while that menu is open, so we dispatch it ourselves via a
-    /// local key monitor (fires whenever any Tic window is key).
+    /// ⌘N → add a task to the focused note (focus its quick-add field); with no note focused it makes
+    /// a new list instead. ⇧⌘N → New List. A menu-style `MenuBarExtra` button's `keyboardShortcut`
+    /// only fires while that menu is open, so we dispatch both ourselves via a local key monitor
+    /// (fires whenever any Tic window is key).
     private func installNewNoteShortcut() {
         newNoteKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             // Membership test (not == .command) so Caps Lock / Fn in the flags don't break it,
-            // and case-insensitive so "N" under Caps Lock still matches.
+            // and case-insensitive so "N" under Caps Lock / Shift still matches.
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            guard flags.contains(.command),
-                  !flags.contains(.shift), !flags.contains(.option), !flags.contains(.control),
+            guard flags.contains(.command), !flags.contains(.option), !flags.contains(.control),
                   event.charactersIgnoringModifiers?.lowercased() == "n" else { return event }
-            Task { @MainActor in AppModel.shared.newNote() }
+            let newList = flags.contains(.shift)
+            Task { @MainActor in
+                let model = AppModel.shared
+                if newList || !model.windows.focusQuickAddOfKeyNote() { model.newNote() }
+            }
             return nil   // consume
         }
     }

@@ -119,6 +119,13 @@ final class AppDatabase: Sendable {
             }
         }
 
+        // The "do today" mark. Its own column with its own targeted write (`updateTaskToday`).
+        migrator.registerMigration("v6_task_is_today") { db in
+            try db.alter(table: "task") { t in
+                t.add(column: "isToday", .boolean).notNull().defaults(to: false)
+            }
+        }
+
         return migrator
     }
 

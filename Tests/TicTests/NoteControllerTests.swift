@@ -127,16 +127,80 @@ struct NoteControllerCompletedOptionsTests {
         #expect(c.displayedTasks.map(\.text) == ["A", "C"])
     }
 
-    @Test("isReorderable follows move-to-bottom only; hiding leaves it reorderable")
-    func isReorderableFollowsMove() async throws {
+    @Test("dropTask with move-to-bottom on moves within the shown order and stores it")
+    func dropWithMoveToBottom() async throws {
         let c = try await makeController()
-        #expect(c.isReorderable)                 // default
-        c.toggleHideCompleted()
-        #expect(c.isReorderable)                 // hiding still allows reorder (remap)
-        c.toggleMoveCompletedToBottom()
-        #expect(!c.isReorderable)                // auto-sort pauses reorder
-        c.toggleMoveCompletedToBottom()
-        #expect(c.isReorderable)
+        try threeWithMiddleDone(c)               // tasks: A(nd) B(done) C(nd)
+        c.toggleMoveCompletedToBottom()          // displayed: [A, C, B]
+
+        // Drag C above A: the stored order becomes the shown one, with the drop applied.
+        let cID = try #require(c.tasks.first { $0.text == "C" }?.id)
+        c.dropTask(id: cID, atDisplayedIndex: 0, targetLevel: 0)
+        #expect(c.tasks.map(\.text) == ["C", "A", "B"])
+        #expect(c.displayedTasks.map(\.text) == ["C", "A", "B"])
+
+        // A not-done task dropped below the done one settles back just above it.
+        let aID = try #require(c.tasks.first { $0.text == "A" }?.id)
+        c.dropTask(id: aID, atDisplayedIndex: 3, targetLevel: 0)
+        #expect(c.tasks.map(\.text) == ["C", "A", "B"])
+    }
+
+    @Test("dropTask nests under the row above, and the sort still applies inside the group")
+    func dropNestsWithMoveToBottom() async throws {
+        let c = try await makeController()
+        c.addTask("P")
+        c.addTask("X")
+        c.addTask("Y")
+        c.toggle(try #require(c.tasks.first { $0.text == "X" }))   // X done
+        c.toggleMoveCompletedToBottom()                            // displayed: [P, Y, X]
+
+        // Drag X right, under P (it's already right below P in the shown order).
+        let xID = try #require(c.tasks.first { $0.text == "X" }?.id)
+        c.dropTask(id: xID, atDisplayedIndex: 1, targetLevel: 1)
+        #expect(c.tasks.map(\.text) == ["P", "X", "Y"])
+        #expect(c.tasks.map(\.indentLevel) == [0, 1, 0])
+        #expect(c.tasks.map(\.isDone) == [false, true, false])     // ticks untouched
+    }
+
+    @Test("toggleToday persists the mark and the move; ticking clears the mark in the DB")
+    func toggleTodayPersists() async throws {
+        let db = try AppDatabase.makeInMemory()
+        let note = Note()
+        try await db.insert(note)
+        let c = NoteController(note: note, database: db)
+        c.addTask("A")
+        c.addTask("B")
+        let b = try #require(c.tasks.last)
+        c.toggleToday(b)
+        #expect(c.tasks.map(\.text) == ["B", "A"])
+
+        // The fire-and-forget writes land in order; wait for them.
+        var stored: [TaskItem] = []
+        for _ in 0..<100 {
+            stored = try await db.tasks(noteId: note.id)
+            if stored.first?.isToday == true { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(stored.map(\.text) == ["B", "A"])
+        #expect(stored.map(\.isToday) == [true, false])
+
+        let live = try #require(c.tasks.first)
+        c.toggle(live)                                   // tick B done
+        #expect(c.tasks.first?.isToday == false)
+        for _ in 0..<100 {
+            stored = try await db.tasks(noteId: note.id)
+            if stored.first?.isDone == true { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(stored.first?.isToday == false)
+    }
+
+    @Test("focusQuickAdd bumps the focus request")
+    func focusQuickAddBumps() async throws {
+        let c = try await makeController()
+        let before = c.quickAddFocusRequest
+        c.focusQuickAdd()
+        #expect(c.quickAddFocusRequest == before + 1)
     }
 
     @Test("trueInsertionIndex is the identity by default and remaps around hidden rows")

@@ -2,10 +2,11 @@ import SwiftUI
 
 /// A single checklist row. Shows the task as rendered inline **Markdown** (bold, *italic*,
 /// `code`, ~~strike~~, [links]) across as many lines as it has; tap the text to edit the raw
-/// source in a plain, growing text box. While editing, **Return** commits and **Shift-Return**
+/// source in a plain, growing text box; double-click it to mark the task to do today (a star, and it
+/// moves to the top of its group). While editing, **Return** commits and **Shift-Return**
 /// (or Option-Return) inserts a newline; **Shift-Tab** nests the task one level deeper and
 /// **Ctrl-Shift-Tab** promotes it back out. Editing commits on Return or when focus leaves.
-/// Hover reveals a ✕ delete button and, when the list is reorderable, a drag grip left of the checkbox;
+/// Hover reveals a ✕ delete button and a drag grip left of the checkbox;
 /// the "Add subtask" affordance lives at the bottom of the hovered
 /// heading's group and is rendered by `NoteView` (this row just reports its hover state up).
 struct TaskRowView: View {
@@ -15,9 +16,9 @@ struct TaskRowView: View {
     /// and again if the list scrolls and the LazyVStack recreates it — so a freshly-added subtask
     /// keeps the keyboard and typing flows uninterrupted. The parent clears it when the run ends.
     let autoEdit: Bool
-    /// Shows the drag grip on hover (off while the list auto-sorts and reordering is paused).
-    let canReorder: Bool
     let onToggle: () -> Void
+    /// Double-click on the text: mark / unmark the task to do today.
+    let onToggleToday: () -> Void
     let onCommit: (String) -> Void
     let onDelete: () -> Void
     let onIndent: () -> Void
@@ -49,8 +50,8 @@ struct TaskRowView: View {
         task: TaskItem,
         theme: NoteTheme,
         autoEdit: Bool = false,
-        canReorder: Bool = false,
         onToggle: @escaping () -> Void,
+        onToggleToday: @escaping () -> Void = {},
         onCommit: @escaping (String) -> Void,
         onDelete: @escaping () -> Void,
         onIndent: @escaping () -> Void,
@@ -63,8 +64,8 @@ struct TaskRowView: View {
         self.task = task
         self.theme = theme
         self.autoEdit = autoEdit
-        self.canReorder = canReorder
         self.onToggle = onToggle
+        self.onToggleToday = onToggleToday
         self.onCommit = onCommit
         self.onDelete = onDelete
         self.onIndent = onIndent
@@ -87,7 +88,7 @@ struct TaskRowView: View {
                 // Reach into the gutter so pointing at the grip doesn't end the hover that shows it.
                 .padding(.leading, Self.gripGutter)
                 .overlay(alignment: .topLeading) {
-                    if canReorder && hovering && !editing {
+                    if hovering && !editing {
                         GripDots().fill(theme.secondary.opacity(0.55)).frame(width: 6, height: 10).padding(.top, 4)
                     }
                 }
@@ -124,6 +125,14 @@ struct TaskRowView: View {
                     .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.plain)
+
+            if task.isToday {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(theme.accent)
+                    .help("To do today — double-click the task to unmark")
+                    .transition(.scale.combined(with: .opacity))
+            }
 
             content
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -170,6 +179,8 @@ struct TaskRowView: View {
                 .opacity(hovering ? 1 : 0)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
+                // Double-click marks it for today; a single click (once the double has timed out) edits.
+                .onTapGesture(count: 2) { onToggleToday() }
                 .onTapGesture { beginEditing() }
         } else {
             Text(renderCache.rendered(text: task.text, color: baseColor))
@@ -177,6 +188,8 @@ struct TaskRowView: View {
                 .opacity(task.isDone ? 0.85 : 1)
                 .fixedSize(horizontal: false, vertical: true)   // wrap + grow, don't truncate
                 .contentShape(Rectangle())
+                // Double-click marks it for today; a single click (once the double has timed out) edits.
+                .onTapGesture(count: 2) { onToggleToday() }
                 .onTapGesture { beginEditing() }
         }
     }

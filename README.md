@@ -16,15 +16,35 @@
 Tic keeps your lists **on the desktop** as floating sticky notes instead of buried behind a menu
 bar click — glance at them, check things off, drag them around. Each note is its own checklist.
 
+## What's different in this fork
+
+This is a fork of [kasvith/tic](https://github.com/kasvith/tic) with a few changes on top:
+
+- **Mark a task to do today** — double-click a task's text to star it (⭐). It moves, with its
+  subtasks, to the top of its group (the top of the list, or the top of its parent's subtasks),
+  just below anything already starred. Double-click again to unstar; ticking it done clears the
+  star. The star is a real flag (new `isToday` column), so AI agents can see and set it too through
+  the MCP `update_task` tool (`today: true/false`).
+- **⌘N adds a task, ⇧⌘N makes a new list** — ⌘N puts the cursor in the focused note's
+  "Add a task…" field (unrolling the note if it's rolled up). With no note focused it still makes a
+  new list. New List moved to ⇧⌘N.
+- **Drag to reorder works with "Move completed to bottom" on** — upstream pauses dragging while
+  that option is on. Here, a drop lands where you saw it and that order is saved; the sort still
+  applies, so an unfinished task dropped among finished ones settles just above them.
+
+> Single-clicking a task's text now waits a moment before editing starts, while macOS checks for a
+> double-click.
+
 ## Features
 
 - **Floating sticky notes** — borderless, draggable, resizable panels; optional float-on-top and
   show-on-all-Spaces per note. Positions and state are remembered across launches.
-- **Multiple lists** — create from the menu bar, **⌘N**, the in-note **+**, or the Dock menu.
+- **Multiple lists** — create from the menu bar, **⇧⌘N**, the in-note **+**, or the Dock menu.
   New lists are auto-named *List 1, List 2, …*
 - **Rich tasks** — **subtasks** up to 3 levels (completing a parent completes its children),
   **multiline** notes (Shift-Return), and inline Markdown (`**bold**`, `*italic*`, `` `code` ``,
-  `~~strike~~`, links). Tap to edit; drag to reorder, or drag right to nest.
+  `~~strike~~`, links). Tap to edit; double-click to star it for today; drag to reorder, or drag
+  right to nest.
 - **Solid or Liquid-Glass** notes — per-note color themes, or a translucent material that shows
   the desktop through it.
 - **Roll-up** — double-click a note's title bar to collapse it to just the header.
@@ -75,7 +95,7 @@ open Package.swift        # edit in Xcode
 ## Usage
 
 - The menu-bar icon lists your **recent lists** (with a **More Lists** submenu for the rest) and
-  opens **Search Lists…**, **New List** (⌘N), and **Launch at Login**.
+  opens **Search Lists…**, **New List** (⇧⌘N), and **Launch at Login**.
 - Hover a note to reveal its controls: color, solid/glass, float-on-top, roll-up, **+** new list,
   and close. Click the title to rename; the bottom field adds tasks (Return keeps focus).
 - Hover a task to reveal a **✕** (delete) and, below it, a **＋** line — click it to add a subtask
@@ -89,7 +109,9 @@ open Package.swift        # edit in Xcode
 | **Shift-Return** (or **⌥ Return**) | New line within the same task |
 | **Shift-Tab** | Make the task a subtask (nest one level deeper) |
 | **⌃ Shift-Tab** | Un-nest a subtask (move it back out) |
-| **⌘N** | New list |
+| **⌘N** | Add a task to the focused list (jumps to the add-a-task field) |
+| **⇧⌘N** | New list |
+| **Double-click** a task | Mark it to do today (⭐, moves to the top of its group); again to unmark |
 | **Double-click** the title bar | Roll the note up / down |
 
 You can also **drag a task** to reorder it, or **drag it right** to nest it — the drop indicator

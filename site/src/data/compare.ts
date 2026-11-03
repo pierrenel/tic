@@ -73,7 +73,7 @@ export const competitors: Competitor[] = [
       },
       {
         q: 'Can I import my Stickies notes into Tic?',
-        a: 'Not automatically. Make a list in Tic with ⌘N, then type or paste each line from the Stickies note and press Return after each one. Shift-Tab nests a line under the one above.',
+        a: 'Not automatically. Make a list in Tic with ⇧⌘N, then type or paste each line from the Stickies note and press Return after each one. Shift-Tab nests a line under the one above.',
       },
       {
         q: 'Is Tic free like Stickies?',

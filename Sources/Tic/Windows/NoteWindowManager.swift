@@ -271,6 +271,17 @@ final class NoteWindowManager: NSObject, NSWindowDelegate {
         panel.orderFrontRegardless()
     }
 
+    /// ⌘N on a note: puts the keyboard in the key note's quick-add field. Returns false when no note
+    /// panel is key (e.g. the Lists window is), so the caller can make a new list instead.
+    @discardableResult
+    func focusQuickAddOfKeyNote() -> Bool {
+        guard let key = NSApp.keyWindow,
+              let id = panels.first(where: { $0.value === key })?.key,
+              let controller = controllers[id] else { return false }
+        controller.focusQuickAdd()
+        return true
+    }
+
     /// Hides a note's panel (the agent equivalent of the header X): marks it closed and closes the
     /// window if it's open. A no-op beyond the DB write when nothing is on screen.
     func closeNoteByID(_ id: UUID) async {

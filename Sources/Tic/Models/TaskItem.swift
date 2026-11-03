@@ -19,6 +19,9 @@ struct TaskItem: Identifiable, Equatable, Codable, Sendable {
     var indentLevel: Int
     var createdAt: Date
     var completedAt: Date?
+    /// Marked to do today (double-click a task): shown with a star and moved to the top of its group.
+    /// Stays until unmarked, or cleared when the task is ticked done.
+    var isToday: Bool
 
     init(
         id: UUID = UUID(),
@@ -28,7 +31,8 @@ struct TaskItem: Identifiable, Equatable, Codable, Sendable {
         sortIndex: Int = 0,
         indentLevel: Int = 0,
         createdAt: Date = Date(),
-        completedAt: Date? = nil
+        completedAt: Date? = nil,
+        isToday: Bool = false
     ) {
         self.id = id
         self.noteId = noteId
@@ -38,6 +42,7 @@ struct TaskItem: Identifiable, Equatable, Codable, Sendable {
         self.indentLevel = indentLevel
         self.createdAt = createdAt
         self.completedAt = completedAt
+        self.isToday = isToday
     }
 }
 

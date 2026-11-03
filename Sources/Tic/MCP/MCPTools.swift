@@ -204,6 +204,18 @@ struct MCPTools: Sendable {
             changed.append("done")
         }
 
+        if let today = args.bool("today") {
+            // Same rule as a double-click: marking moves it to the top of its group. Re-read after a
+            // `done` change, which clears the mark (and so may make this a fresh mark again).
+            let all = try await database.tasks(noteId: task.noteId)
+            if let current = all.first(where: { $0.id == id }), current.isToday != today {
+                let updated = TaskOutline.settingToday(all, id: id, isToday: today)
+                let moved = updated.map(\.id) != all.map(\.id)
+                try await database.updateTaskToday(id: id, isToday: today, reorder: moved ? updated : nil)
+                changed.append("today")
+            }
+        }
+
         return .object(["task_id": .string(id.uuidString), "changed": .array(changed.map { .string($0) })])
     }
 
@@ -370,6 +382,7 @@ struct MCPTools: Sendable {
                     "text": .string(t.text),
                     "level": .int(t.indentLevel),
                     "done": .bool(t.isDone),
+                    "today": .bool(t.isToday),
                     "has_image": .bool(imageIds.contains(t.id)),
                 ])
             })

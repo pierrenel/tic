@@ -163,6 +163,11 @@ panels**, and a few responsibilities are deliberately split across the AppKit/Sw
   `.aspectRatio(.fit)` + `.frame(maxHeight:)` laid out row-wide, dragging the hover chrome to the note's edge.
   Pointing at or cropping an image pauses its row's reorder drag (`GestureMask.subviews`) — SwiftUI's row
   `DragGesture` otherwise also fires over the image's buttons and even the AppKit crop view.
+- **"Do today" is a flag, not text.** `task.isToday` (double-click a row's text → `toggleToday`) shows
+  a star and moves the subtree to the top of its sibling group, below siblings already marked
+  (`TaskOutline.settingToday`); written with its own `updateTaskToday`. Ticking done clears it —
+  both in `TaskOutline.setDone` and in `writeCompletion`'s SQL, so UI and MCP agree. The double-tap
+  makes a single click on the text wait a moment before it starts editing.
 - **Rendered Markdown is memoised (`MarkdownRenderCache`).** Parsing inline Markdown per line on
   every body re-eval made dragging janky (the whole list re-renders each frame); the cache re-parses
   only when a task's text/colour actually changes.

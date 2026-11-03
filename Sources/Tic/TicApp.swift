@@ -88,7 +88,7 @@ private struct MenuBarContent: View {
 
     var body: some View {
         Button("New List") { model.newNote() }
-            .keyboardShortcut("n")   // hint + works while the menu is open; AppDelegate covers the rest
+            .keyboardShortcut("n", modifiers: [.command, .shift])   // hint + works while the menu is open; AppDelegate covers the rest
 
         Divider()
 

@@ -293,13 +293,10 @@ struct NoteView: View {
                     )
                 }
             )
-            // Reorder is paused while completed are auto-sorted to the bottom (it would fight the sort), and on a
-            // row whose image is being pointed at or cropped (so its buttons / crop handles never drag the task).
-            // `.subviews` disables only this drag gesture, leaving the checkbox / editor / image usable.
-            .gesture(
-                reorderGesture(for: task),
-                including: controller.isReorderable && imageInteractionTaskID != task.id ? .all : .subviews
-            )
+            // Reorder is paused on a row whose image is being pointed at or cropped (so its buttons / crop
+            // handles never drag the task). `.subviews` disables only this drag gesture, leaving the
+            // checkbox / editor / image usable.
+            .gesture(reorderGesture(for: task), including: imageInteractionTaskID != task.id ? .all : .subviews)
     }
 
     private func taskRow(_ task: TaskItem) -> some View {
@@ -307,8 +304,8 @@ struct NoteView: View {
             task: task,
             theme: theme,
             autoEdit: task.id == addingRowID,
-            canReorder: controller.isReorderable,
             onToggle: { controller.toggle(task) },
+            onToggleToday: { withAnimation(.snappy(duration: 0.18)) { controller.toggleToday(task) } },
             onCommit: { controller.commitText(task, $0) },
             onDelete: { controller.delete(task) },
             onIndent: { controller.indent(task) },
@@ -406,9 +403,7 @@ extension NoteView {
         let index = TaskOutline.insertionIndex(forSlot: drag.slot, removing: drag.blockRange)
         let level = drag.level
         withAnimation(.snappy(duration: 0.18)) {
-            controller.moveTask(
-                id: id, toInsertionIndex: controller.trueInsertionIndex(forDisplayedIndex: index), targetLevel: level
-            )
+            controller.dropTask(id: id, atDisplayedIndex: index, targetLevel: level)
             drag.block = []
         }
     }

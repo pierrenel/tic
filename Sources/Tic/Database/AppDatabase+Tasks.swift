@@ -94,13 +94,32 @@ extension AppDatabase {
         }
     }
 
-    /// Writes `isDone` + `completedAt` for each update, inside an existing write transaction.
+    /// Writes `isDone` + `completedAt` for each update, inside an existing write transaction. Ticking a
+    /// task done also clears its today mark (as `TaskOutline.setDone` does); unticking leaves it.
     private static func writeCompletion(_ updates: [TaskCompletionUpdate], _ db: Database) throws {
         for u in updates {
             try db.execute(
-                sql: "UPDATE task SET isDone = ?, completedAt = ? WHERE id = ?",
-                arguments: [u.isDone, u.completedAt, u.id]
+                sql: """
+                UPDATE task SET isDone = ?, completedAt = ?,
+                    isToday = CASE WHEN ? THEN 0 ELSE isToday END
+                WHERE id = ?
+                """,
+                arguments: [u.isDone, u.completedAt, u.isDone, u.id]
             )
+        }
+    }
+
+    /// Targeted write of a task's `isToday` mark, plus (when marking moved it) the note's new order —
+    /// one transaction, so the observation never sees the mark without the move. Touches only
+    /// `isToday` and `sortIndex`, never the text or the completion columns.
+    func updateTaskToday(id: UUID, isToday: Bool, reorder ordered: [TaskItem]? = nil) async throws {
+        try await dbQueue.write { db in
+            try db.execute(sql: "UPDATE task SET isToday = ? WHERE id = ?", arguments: [isToday, id])
+            if let ordered {
+                for (index, task) in ordered.enumerated() where task.sortIndex != index {
+                    try db.execute(sql: "UPDATE task SET sortIndex = ? WHERE id = ?", arguments: [index, task.id])
+                }
+            }
         }
     }
 

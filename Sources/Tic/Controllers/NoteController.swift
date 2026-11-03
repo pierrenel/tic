@@ -145,6 +145,17 @@ final class NoteController {
         }
     }
 
+    /// Puts the keyboard in the quick-add field (⌘N on a focused note). A rolled-up note is unrolled
+    /// first; the request waits a tick so the freshly-mounted field sees the bump rather than adopting it.
+    func focusQuickAdd() {
+        guard note.isCollapsed else {
+            quickAddFocusRequest += 1
+            return
+        }
+        toggleCollapsed()
+        Task { @MainActor [weak self] in self?.quickAddFocusRequest += 1 }
+    }
+
     func discardPendingImage() {
         pendingImage = nil
         pendingThumbnail = nil
@@ -252,6 +263,18 @@ final class NoteController {
         Task { [db] in try? await db.updateTaskCompletion(changes) }
     }
 
+    /// Double-click: marks the task to do today (star + moved to the top of its group), or unmarks it.
+    func toggleToday(_ task: TaskItem) {
+        guard let current = tasks.first(where: { $0.id == task.id }) else { return }
+        let marking = !current.isToday
+        guard !(marking && current.isDone) else { return }   // a finished task isn't "to do today"
+        let updated = TaskOutline.settingToday(tasks, id: task.id, isToday: marking)
+        let moved = updated.map(\.id) != tasks.map(\.id)
+        tasks = updated   // optimistic; the observation confirms
+        let id = task.id
+        Task { [db] in try? await db.updateTaskToday(id: id, isToday: marking, reorder: moved ? updated : nil) }
+    }
+
     /// Makes the task a subtask of the row above it (one level deeper), carrying any of its own
     /// subtasks along. No-op at the start of the list or once at the maximum depth.
     func indent(_ task: TaskItem) {
@@ -277,10 +300,13 @@ final class NoteController {
         // Optimistically reflect the committed text so the row never flashes blank between leaving
         // the editor and the observation confirming the write — matters most in the rapid-add flow,
         // where each Return commits one row while opening the next.
+        // Build the write from the live row, not the view's copy, so a star/tick/move made since the
+        // row last rendered isn't overwritten by this whole-record update.
+        var updated = task
         if let index = tasks.firstIndex(where: { $0.id == task.id }) {
             tasks[index].text = text
+            updated = tasks[index]
         }
-        var updated = task
         updated.text = text
         let snapshot = updated
         Task { [db] in try? await db.update(snapshot) }
@@ -306,15 +332,21 @@ final class NoteController {
         applyStructural(survivors, deleteIds: doneIds, reorder: true)
     }
 
-    /// Moves the task with `id` — and its whole subtree — so it lands at `insertionIndex` (an index
-    /// into the *current* ordering, 0...count), optionally re-nesting it to `targetLevel` (the
-    /// horizontal drag-to-nest). Called once on drop, not continuously during the drag.
-    func moveTask(id: UUID, toInsertionIndex insertionIndex: Int, targetLevel: Int? = nil) {
-        let reordered = TaskOutline.movingSubtree(
-            tasks, id: id, toInsertionIndex: insertionIndex, targetLevel: targetLevel
-        )
+    /// Drops a dragged task (with its whole subtree) at `displayedIndex` — a position in
+    /// `displayedTasks` — re-nested to `targetLevel` (the horizontal drag-to-nest). Called once on drop,
+    /// not continuously during the drag. The move is made on the order the user actually sees (`orderBase`), so with
+    /// move-to-bottom on, the sorted order is what gets stored: the drop lands where it was shown, and a
+    /// not-done task dropped among done ones settles back just above them (the sort still applies).
+    func dropTask(id: UUID, atDisplayedIndex displayedIndex: Int, targetLevel: Int) {
+        let base = orderBase
+        var reordered = TaskOutline.normalizedLevels(TaskOutline.movingSubtree(
+            base, id: id,
+            toInsertionIndex: insertionIndex(in: base, forDisplayedIndex: displayedIndex),
+            targetLevel: targetLevel
+        ))
+        if note.moveCompletedToBottom { reordered = TaskOutline.sortedCompletedToBottom(reordered) }
         guard reordered != tasks else { return }   // no reorder and no re-nest → nothing to do
-        applyStructural(TaskOutline.normalizedLevels(reordered), reorder: true)
+        applyStructural(reordered, reorder: true)
     }
 
     // MARK: - Structural helpers
@@ -449,8 +481,8 @@ extension NoteController {
         persistListOptions()
     }
 
-    /// Keeps completed subtrees sunk to the bottom of each sibling group. While on, drag-reorder is
-    /// paused (the auto-sort would override a manual drop) — see `isReorderable`.
+    /// Keeps completed subtrees sunk to the bottom of each sibling group. Drag-reorder still works:
+    /// `dropTask` moves within the sorted order and stores it — see `dropTask`.
     func toggleMoveCompletedToBottom() {
         note.moveCompletedToBottom.toggle()
         persistListOptions()
@@ -473,25 +505,32 @@ extension NoteController {
         return display
     }
 
-    /// Drag-reorder is coherent only when it isn't fighting an automatic sort. Hiding still allows it
-    /// (the drop index is remapped via `trueInsertionIndex`); move-to-bottom pauses it.
-    var isReorderable: Bool { !note.moveCompletedToBottom }
+    /// The full task order a drag works on: `tasks`, or with move-to-bottom on, the sorted order shown on
+    /// screen. `displayedTasks` is always a subsequence of it (hiding only filters), so a displayed drop
+    /// index maps onto it by id.
+    private var orderBase: [TaskItem] {
+        note.moveCompletedToBottom ? TaskOutline.sortedCompletedToBottom(tasks) : tasks
+    }
 
     /// How many tasks are currently completed (drives the clear button's visibility/label).
     var completedCount: Int { tasks.lazy.filter(\.isDone).count }
 
-    /// Translates a drop index expressed in **displayed** coordinates into an insertion index into the
-    /// true `tasks` array (what `moveTask` expects). It's the identity when `displayedTasks == tasks`;
-    /// in hide-only mode (a filtered subsequence) it anchors on the visible neighbour's id so a drop
+    /// Translates a drop index expressed in **displayed** coordinates into an insertion index into
+    /// `orderBase` (what `dropTask` moves within). It's the identity when `displayedTasks == orderBase`;
+    /// with hidden rows (a filtered subsequence) it anchors on the visible neighbour's id so a drop
     /// lands in the right place even with hidden done rows interleaved.
     func trueInsertionIndex(forDisplayedIndex displayedIndex: Int) -> Int {
+        insertionIndex(in: orderBase, forDisplayedIndex: displayedIndex)
+    }
+
+    private func insertionIndex(in base: [TaskItem], forDisplayedIndex displayedIndex: Int) -> Int {
         let display = displayedTasks
         if displayedIndex >= display.count {
             guard let last = display.last,
-                  let lastTrue = tasks.firstIndex(where: { $0.id == last.id }) else { return tasks.count }
-            return TaskOutline.subtreeRange(tasks, at: lastTrue).upperBound   // after the last visible subtree
+                  let lastIndex = base.firstIndex(where: { $0.id == last.id }) else { return base.count }
+            return TaskOutline.subtreeRange(base, at: lastIndex).upperBound   // after the last visible subtree
         }
-        return tasks.firstIndex(where: { $0.id == display[displayedIndex].id }) ?? tasks.count
+        return base.firstIndex(where: { $0.id == display[displayedIndex].id }) ?? base.count
     }
 
     // MARK: - Lifecycle

@@ -85,10 +85,31 @@ enum TaskOutline {
     }
 
     /// Sets a task's done state only when it actually changes, stamping/clearing `completedAt`.
+    /// Ticking a task done also clears its "today" mark (the write in `writeCompletion` matches).
     private static func setDone(_ task: inout TaskItem, _ done: Bool, now: Date) {
         guard task.isDone != done else { return }
         task.isDone = done
         task.completedAt = done ? now : nil
+        if done { task.isToday = false }
+    }
+
+    // MARK: - Today
+
+    /// Marks (or unmarks) the task at `id` as "do today". Marking also moves it, with its subtree, to
+    /// the top of its own group — the first child of its parent, or the top of the list — just below
+    /// any siblings already marked, so the today block keeps the order things were marked in.
+    /// Unmarking leaves it where it is. Levels never change, so the outline stays valid.
+    static func settingToday(_ tasks: [TaskItem], id: UUID, isToday: Bool) -> [TaskItem] {
+        guard let index = tasks.firstIndex(where: { $0.id == id }) else { return tasks }
+        var out = tasks
+        out[index].isToday = isToday
+        guard isToday else { return out }
+        let level = out[index].indentLevel
+        var slot = parentIndex(out, of: index).map { $0 + 1 } ?? 0
+        while slot < out.count, slot != index, out[slot].indentLevel == level, out[slot].isToday {
+            slot = subtreeRange(out, at: slot).upperBound   // skip a marked sibling and its subtree
+        }
+        return movingSubtree(out, id: id, toInsertionIndex: slot)
     }
 
     // MARK: - Indenting

@@ -418,4 +418,47 @@ struct TaskOutlineTests {
         let tasks = make([("A", 0, true), ("B", 1, true)])
         #expect(TaskOutline.hidingCompleted(tasks).isEmpty)
     }
+
+    // MARK: - Today
+
+    private func texts(_ tasks: [TaskItem]) -> [String] { tasks.map(\.text) }
+
+    @Test("marking today moves a top-level task (with its subtree) to the top of the list")
+    func todayTopLevel() {
+        let tasks = make([("A", 0, false), ("B", 0, false), ("B1", 1, false), ("C", 0, false)])
+        let b = tasks[1].id
+        let out = TaskOutline.settingToday(tasks, id: b, isToday: true)
+        #expect(texts(out) == ["B", "B1", "A", "C"])
+        #expect(levels(out) == [0, 1, 0, 0])
+        #expect(out.map(\.isToday) == [true, false, false, false])
+    }
+
+    @Test("marking a subtask moves it to the top of its parent's children only")
+    func todaySubtask() {
+        let tasks = make([("A", 0, false), ("P", 0, false), ("x", 1, false), ("y", 1, false), ("z", 2, false)])
+        let out = TaskOutline.settingToday(tasks, id: tasks[3].id, isToday: true)
+        #expect(texts(out) == ["A", "P", "y", "z", "x"])
+        #expect(levels(out) == [0, 0, 1, 2, 1])
+    }
+
+    @Test("a newly marked task goes below siblings already marked; unmarking doesn't move")
+    func todayKeepsMarkOrder() {
+        var tasks = make([("A", 0, false), ("B", 0, false), ("C", 0, false)])
+        tasks = TaskOutline.settingToday(tasks, id: tasks[1].id, isToday: true)   // B A C
+        tasks = TaskOutline.settingToday(tasks, id: tasks[2].id, isToday: true)   // B C A
+        #expect(texts(tasks) == ["B", "C", "A"])
+        tasks = TaskOutline.settingToday(tasks, id: tasks[0].id, isToday: false)  // B stays put
+        #expect(texts(tasks) == ["B", "C", "A"])
+        #expect(tasks.map(\.isToday) == [false, true, false])
+    }
+
+    @Test("ticking a task done clears its today mark; unticking doesn't restore it")
+    func tickClearsToday() {
+        var tasks = make([("A", 0, false), ("A1", 1, false)])
+        tasks[1].isToday = true
+        tasks = TaskOutline.applyingToggle(tasks, toggling: tasks[0].id, now: Date())   // cascades to A1
+        #expect(tasks.map(\.isToday) == [false, false])
+        tasks = TaskOutline.applyingToggle(tasks, toggling: tasks[0].id, now: Date())
+        #expect(tasks.map(\.isToday) == [false, false])
+    }
 }
