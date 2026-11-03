@@ -323,6 +323,13 @@ struct NoteView: View {
                     onInteractionChange: { active in setImageInteraction(task.id, active) }
                 )
             },
+            hasNote: controller.taskNoteIDs.contains(task.id),
+            note: TaskNoteView(
+                taskText: task.text,
+                load: { await controller.loadTaskNote(task.id) },
+                save: { controller.saveTaskNote($0, for: task.id) }
+            ),
+            onRemoveNote: { controller.saveTaskNote(nil, for: task.id) },
             onPasteImage: { controller.attachImage($0, to: task) }
         )
     }

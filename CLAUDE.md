@@ -168,6 +168,13 @@ panels**, and a few responsibilities are deliberately split across the AppKit/Sw
   (`TaskOutline.settingToday`); written with its own `updateTaskToday`. Ticking done clears it —
   both in `TaskOutline.setDone` and in `writeCompletion`'s SQL, so UI and MCP agree. The double-tap
   makes a single click on the text wait a moment before it starts editing.
+- **Task notes are RTFD in their own table.** `taskNote` (PK `taskId`, cascades) holds a rich-text
+  note per task; like images it's a separate table so `observeTasks` never loads it. The controller
+  observes only which tasks have one (`taskNoteIDs`, drives the row's trailing icon) and reads the
+  bytes on open (`loadTaskNote`). `TaskNoteView` is a popover over an AppKit `NSTextView` (TextKit 1,
+  `importsGraphics`, link detection) that saves debounced + on close; `RichNote.encode` returns nil
+  for an empty note, which deletes the row. Saves are chained (`taskNoteSave`) so they land in order.
+  Wide pasted images get a scaled `NSTextAttachmentCell` for display; the file wrapper keeps the original.
 - **Rendered Markdown is memoised (`MarkdownRenderCache`).** Parsing inline Markdown per line on
   every body re-eval made dragging janky (the whole list re-renders each frame); the cache re-parses
   only when a task's text/colour actually changes.

@@ -135,6 +135,45 @@ extension AppDatabase {
             .values(in: dbQueue)
     }
 
+    // MARK: - Task notes
+
+    /// Stores a task's note (RTFD bytes), or removes it when `data` is nil.
+    func setTaskNote(taskId: UUID, data: Data?) async throws {
+        try await dbQueue.write { db in
+            if let data {
+                try db.execute(
+                    sql: "INSERT OR REPLACE INTO taskNote (taskId, data, updatedAt) VALUES (?, ?, ?)",
+                    arguments: [taskId, data, Date()]
+                )
+            } else {
+                try db.execute(sql: "DELETE FROM taskNote WHERE taskId = ?", arguments: [taskId])
+            }
+        }
+    }
+
+    /// A task's note bytes — read on demand when the note is opened, never via an observation.
+    func taskNoteData(taskId: UUID) async throws -> Data? {
+        try await dbQueue.read { db in
+            try Data.fetchOne(db, sql: "SELECT data FROM taskNote WHERE taskId = ?", arguments: [taskId])
+        }
+    }
+
+    private static let noteIdsSQL = """
+        SELECT n.taskId FROM taskNote n JOIN task t ON t.id = n.taskId WHERE t.noteId = ?
+        """
+
+    /// The ids of a note's tasks that have a note — a one-shot for `get_note`.
+    func taskNoteIds(noteId: UUID) async throws -> Set<UUID> {
+        try await dbQueue.read { db in Set(try UUID.fetchAll(db, sql: Self.noteIdsSQL, arguments: [noteId])) }
+    }
+
+    /// Emits which of a note's tasks have a note (drives the row's note icon). Never selects `data`.
+    func observeTaskNoteIds(noteId: UUID) -> AsyncValueObservation<Set<UUID>> {
+        ValueObservation
+            .tracking { db in Set(try UUID.fetchAll(db, sql: Self.noteIdsSQL, arguments: [noteId])) }
+            .values(in: dbQueue)
+    }
+
     // MARK: - Task images
 
     /// Stores (or replaces) a task's image. A replaced picture starts uncropped again.

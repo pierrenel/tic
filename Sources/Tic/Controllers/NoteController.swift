@@ -15,11 +15,16 @@ final class NoteController {
     private(set) var imageCrops: [UUID: CGRect] = [:]
     /// Downsampled, uncropped bitmaps for drawing images on the note, loaded lazily per task.
     private(set) var thumbnails: [UUID: CGImage] = [:]
+    /// The tasks that have a note attached (each shows a note icon at the end of its row).
+    private(set) var taskNoteIDs: Set<UUID> = []
 
     @ObservationIgnored private let db: AppDatabase
     @ObservationIgnored private var observation: Task<Void, Never>?
     @ObservationIgnored private var noteObservation: Task<Void, Never>?
     @ObservationIgnored private var imageObservation: Task<Void, Never>?
+    @ObservationIgnored private var taskNoteObservation: Task<Void, Never>?
+    /// The last queued note write; each save waits for it, so an older edit can never land last.
+    @ObservationIgnored private var taskNoteSave: Task<Void, Never>?
     @ObservationIgnored private var loadingThumbnails: Set<UUID> = []
 
     /// Re-applies window behaviour (floatOnTop, showOnAllSpaces) to the live panel. Set by
@@ -79,9 +84,21 @@ final class NoteController {
                 NSLog("[Tic] image observation ended for \(noteID): \(error)")
             }
         }
+        taskNoteObservation?.cancel()
+        taskNoteObservation = Task { [weak self, db, noteID] in
+            do {
+                for try await ids in db.observeTaskNoteIds(noteId: noteID) {
+                    self?.taskNoteIDs = ids
+                }
+            } catch {
+                NSLog("[Tic] task-note observation ended for \(noteID): \(error)")
+            }
+        }
     }
 
     func stop() {
+        taskNoteObservation?.cancel()
+        taskNoteObservation = nil
         observation?.cancel()
         observation = nil
         noteObservation?.cancel()
@@ -123,6 +140,24 @@ final class NoteController {
         }
         // insertTask assigns the real sortIndex (MAX+1)
         Task { [db] in try? await db.insertTask(task, imageData: imageData) }
+    }
+
+    // MARK: - Task notes
+
+    /// A task's note (RTFD bytes), or nil when it has none. Read on demand when the note opens.
+    func loadTaskNote(_ taskID: UUID) async -> Data? {
+        try? await db.taskNoteData(taskId: taskID)
+    }
+
+    /// Saves a task's note; nil (an emptied note) removes it, and with it the row's icon. Writes are
+    /// chained so they land in the order they were made.
+    func saveTaskNote(_ data: Data?, for taskID: UUID) {
+        if data == nil { taskNoteIDs.remove(taskID) } else { taskNoteIDs.insert(taskID) }   // optimistic
+        let previous = taskNoteSave
+        taskNoteSave = Task { [db] in
+            await previous?.value
+            try? await db.setTaskNote(taskId: taskID, data: data)
+        }
     }
 
     // MARK: - Quick-add image

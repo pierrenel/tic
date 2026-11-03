@@ -25,6 +25,10 @@ This is a fork of [kasvith/tic](https://github.com/kasvith/tic) with a few chang
   just below anything already starred. Double-click again to unstar; ticking it done clears the
   star. The star is a real flag (new `isToday` column), so AI agents can see and set it too through
   the MCP `update_task` tool (`today: true/false`).
+- **Notes on tasks** — right-click a task → **Add Note…** to attach a note: rich text, pasted
+  images, and clickable links (stored as RTFD, like Stickies). It saves as you type; a task with a
+  note shows a note icon at the end of its row; click it to open the note. Emptying a note (or
+  **Remove Note**) removes it. The right-click menu also has **Do Today** and **Delete Task**.
 - **⌘N adds a task, ⇧⌘N makes a new list** — ⌘N puts the cursor in the focused note's
   "Add a task…" field (unrolling the note if it's rolled up). With no note focused it still makes a
   new list. New List moved to ⇧⌘N.

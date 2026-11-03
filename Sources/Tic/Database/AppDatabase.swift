@@ -126,6 +126,17 @@ final class AppDatabase: Sendable {
             }
         }
 
+        // A task's note: rich text (RTFD — text, pasted images, links), in its own table so the task
+        // observation never loads it. No row = no note. Cascades with its task.
+        migrator.registerMigration("v7_task_note") { db in
+            try db.create(table: "taskNote") { t in
+                t.primaryKey("taskId", .blob).notNull()
+                    .references("task", onDelete: .cascade)
+                t.column("data", .blob).notNull()
+                t.column("updatedAt", .datetime).notNull()
+            }
+        }
+
         return migrator
     }
 

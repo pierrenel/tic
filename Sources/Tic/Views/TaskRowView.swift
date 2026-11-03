@@ -31,12 +31,18 @@ struct TaskRowView: View {
     let onHoverChanged: (Bool) -> Void
     /// The task's pasted image (built by `NoteView`), shown under the text; nil when it has none.
     let image: TaskImageView?
+    /// True when the task has a note: a note icon sits at the very end of the row.
+    let hasNote: Bool
+    /// The task's note editor, shown in a popover (right-click → Add/Edit Note…, or the note icon).
+    let note: TaskNoteView?
+    let onRemoveNote: () -> Void
     /// ⌘V of an image while this row is being edited attaches it to the task.
     let onPasteImage: (Data) -> Void
 
     @State private var draft: String
     @State private var editing = false
     @State private var hovering = false
+    @State private var showingNote = false
     // Memoises the parsed Markdown so it isn't re-parsed on every re-render (e.g. each frame of a
     // drag), which otherwise makes reordering feel laggy.
     @State private var renderCache = MarkdownRenderCache()
@@ -59,6 +65,9 @@ struct TaskRowView: View {
         onSubmit: @escaping () -> Void = {},
         onHoverChanged: @escaping (Bool) -> Void = { _ in },
         image: TaskImageView? = nil,
+        hasNote: Bool = false,
+        note: TaskNoteView? = nil,
+        onRemoveNote: @escaping () -> Void = {},
         onPasteImage: @escaping (Data) -> Void = { _ in }
     ) {
         self.task = task
@@ -73,6 +82,9 @@ struct TaskRowView: View {
         self.onSubmit = onSubmit
         self.onHoverChanged = onHoverChanged
         self.image = image
+        self.hasNote = hasNote
+        self.note = note
+        self.onRemoveNote = onRemoveNote
         self.onPasteImage = onPasteImage
         _draft = State(initialValue: task.text)
     }
@@ -151,8 +163,38 @@ struct TaskRowView: View {
                 .buttonStyle(.plain)
                 .help("Delete task")
             }
+
+            if hasNote {
+                Button { showingNote = true } label: {
+                    Image(systemName: "note.text")
+                        .font(.system(size: 12))
+                        .foregroundStyle(theme.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Show note")
+            }
         }
         .contentShape(Rectangle())
+        .contextMenu { contextMenu }
+        .popover(isPresented: $showingNote, arrowEdge: .trailing) { note }
+    }
+
+    @ViewBuilder
+    private var contextMenu: some View {
+        if note != nil {
+            Button(hasNote ? "Edit Note…" : "Add Note…") { showingNote = true }
+            if hasNote {
+                Button("Remove Note", action: onRemoveNote)
+            }
+            Divider()
+        }
+        if task.isToday {
+            Button("Remove from Today", action: onToggleToday)
+        } else if !task.isDone {
+            Button("Do Today", action: onToggleToday)
+        }
+        Divider()
+        Button("Delete Task", role: .destructive, action: onDelete)
     }
 
     @ViewBuilder

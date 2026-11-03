@@ -76,7 +76,8 @@ struct MCPTools: Sendable {
         let note = try await note(id)
         let tasks = try await database.tasks(noteId: id)
         let imageIds = try await database.taskImageIds(noteId: id)
-        return noteValue(note, tasks: tasks, imageIds: imageIds)
+        let noteIds = try await database.taskNoteIds(noteId: id)
+        return noteValue(note, tasks: tasks, imageIds: imageIds, noteIds: noteIds)
     }
 
     private func createNote(_ args: Args) async throws -> Value {
@@ -361,7 +362,9 @@ struct MCPTools: Sendable {
         return m
     }
 
-    private func noteValue(_ n: Note, tasks: [TaskItem]?, imageIds: Set<UUID> = []) -> Value {
+    private func noteValue(
+        _ n: Note, tasks: [TaskItem]?, imageIds: Set<UUID> = [], noteIds: Set<UUID> = []
+    ) -> Value {
         var o: [String: Value] = [
             "id": .string(n.id.uuidString),
             "title": .string(n.title),
@@ -384,6 +387,7 @@ struct MCPTools: Sendable {
                     "done": .bool(t.isDone),
                     "today": .bool(t.isToday),
                     "has_image": .bool(imageIds.contains(t.id)),
+                    "has_note": .bool(noteIds.contains(t.id)),
                 ])
             })
         }
