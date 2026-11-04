@@ -87,6 +87,7 @@ struct NoteView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(NoteBackground(color: note.color, material: note.material))
+        .background(WindowAppearance(dark: theme.isDark))
         .ignoresSafeArea()
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) { revealed = hovering }

@@ -113,7 +113,7 @@ final class NoteWindowManager: NSObject, NSWindowDelegate {
     func newNote() async {
         do {
             let inserted = try await appDatabase.insertNewNote(
-                Note(color: NoteColor.allCases.randomElement() ?? .yellow)
+                Note(color: NoteColor.classic.randomElement() ?? .yellow)
             )
             let step = Double(inserted.sortIndex % 8) * 28
             var note = inserted

@@ -84,6 +84,7 @@ struct PlainTextEditor: NSViewRepresentable {
         view.onPasteImage = onPasteImage
         view.font = font
         view.textColor = NSColor(textColor)
+        view.insertionPointColor = NSColor(textColor)
         view.drawsBackground = false
         view.backgroundColor = .clear
         view.isRichText = false

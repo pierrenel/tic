@@ -41,3 +41,38 @@ private struct VisualEffectBackground: NSViewRepresentable {
         nsView.state = .active
     }
 }
+
+/// Forces its window dark while `dark` is set (a solid note on a dark scheme), else lets it follow the
+/// system. Done on the window, not with a SwiftUI `colorScheme`, so the AppKit pieces — the text views'
+/// caret and `labelColor`, scrollers, and the popovers anchored in the note — go dark with it.
+struct WindowAppearance: NSViewRepresentable {
+    let dark: Bool
+
+    func makeNSView(context: Context) -> AppearanceView {
+        let view = AppearanceView()
+        view.dark = dark
+        return view
+    }
+
+    func updateNSView(_ view: AppearanceView, context: Context) {
+        view.dark = dark
+        view.apply()
+    }
+
+    final class AppearanceView: NSView {
+        var dark = false
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            apply()
+        }
+
+        func apply() {
+            guard let window else { return }
+            let wanted = dark ? NSAppearance(named: .darkAqua) : nil
+            if window.appearance?.name != wanted?.name { window.appearance = wanted }
+        }
+
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    }
+}

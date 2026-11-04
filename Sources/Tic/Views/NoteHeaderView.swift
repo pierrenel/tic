@@ -111,29 +111,49 @@ struct NoteHeaderView: View {
         .popover(isPresented: $showColorPopover, arrowEdge: .bottom) { colorPicker }
     }
 
+    /// Tic's pastels, then a labelled row per scheme family (Catppuccin, Rosé Pine, Tokyo Night, …).
     private var colorPicker: some View {
-        let columns = Array(repeating: GridItem(.fixed(26), spacing: 8), count: 3)
-        return LazyVGrid(columns: columns, spacing: 8) {
-            ForEach(NoteColor.allCases) { swatch in
-                Button {
-                    controller.setColor(swatch)
-                    showColorPopover = false
-                } label: {
-                    Circle()
-                        .fill(swatch.fill)
-                        .frame(width: 24, height: 24)
-                        .overlay(
-                            Circle().strokeBorder(
-                                swatch == note.color ? swatch.accent : Color.black.opacity(0.12),
-                                lineWidth: swatch == note.color ? 2.5 : 1
-                            )
-                        )
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(NoteColor.Family.allCases) { family in
+                VStack(alignment: .leading, spacing: 4) {
+                    if family != .classic {
+                        Text(family.rawValue)
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 8) {
+                        ForEach(family.members) { swatch in swatchButton(swatch) }
+                    }
                 }
-                .buttonStyle(.plain)
-                .help(swatch.displayName)
             }
         }
         .padding(12)
+    }
+
+    private func swatchButton(_ swatch: NoteColor) -> some View {
+        let isSelected = swatch == note.color
+        return Button {
+            controller.setColor(swatch)
+            showColorPopover = false
+        } label: {
+            Circle()
+                .fill(swatch.fill)
+                .frame(width: 24, height: 24)
+                // A scheme's paper alone looks like every other dark base; its accent tells them apart.
+                .overlay {
+                    if swatch.family != .classic {
+                        Circle().fill(swatch.accent).frame(width: 9, height: 9)
+                    }
+                }
+                .overlay(
+                    Circle().strokeBorder(
+                        isSelected ? swatch.accent : Color.primary.opacity(0.15),
+                        lineWidth: isSelected ? 2.5 : 1
+                    )
+                )
+        }
+        .buttonStyle(.plain)
+        .help(swatch.displayName)
     }
 
     private var materialButton: some View {

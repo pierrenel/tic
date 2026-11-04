@@ -67,7 +67,7 @@ struct LiftedRow: View {
                 if theme.isGlass {
                     shape.fill(Color(nsColor: .windowBackgroundColor).opacity(0.92))
                 } else {
-                    shape.fill(theme.fill).overlay(shape.fill(.white.opacity(0.3)))
+                    shape.fill(theme.fill).overlay(shape.fill(.white.opacity(theme.isDark ? 0.08 : 0.3)))
                 }
             }
             .shadow(color: .black.opacity(0.16), radius: 10, y: 6)
