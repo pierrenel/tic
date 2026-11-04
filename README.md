@@ -31,6 +31,11 @@ these changes back out for upstream's build.
   images, and clickable links (stored as RTFD, like Stickies). It saves as you type; a task with a
   note shows a note icon at the end of its row; click it to open the note. Emptying a note (or
   **Remove Note**) removes it. The right-click menu also has **Do Today** and **Delete Task**.
+  Note text follows light/dark mode, including text pasted from documents.
+- **Editor colour schemes** — alongside the six pastels, the colour picker has Catppuccin (Latte,
+  Frappé, Macchiato, Mocha), Rosé Pine (Main, Moon, Dawn), Tokyo Night (Night, Storm, Moon, Day),
+  Dracula, Nord, Gruvbox and Solarized (dark and light). A solid note on a dark scheme goes fully
+  dark: caret, scrollbars and popovers too. AI agents can set them through MCP (`catppuccinMocha`, …).
 - **⌘N adds a task, ⇧⌘N makes a new list** — ⌘N puts the cursor in the focused note's
   "Add a task…" field (unrolling the note if it's rolled up). With no note focused it still makes a
   new list. New List moved to ⇧⌘N.
@@ -51,7 +56,7 @@ these changes back out for upstream's build.
   **multiline** notes (Shift-Return), and inline Markdown (`**bold**`, `*italic*`, `` `code` ``,
   `~~strike~~`, links). Tap to edit; double-click to star it for today; drag to reorder, or drag
   right to nest.
-- **Solid or Liquid-Glass** notes — per-note color themes, or a translucent material that shows
+- **Solid or Liquid-Glass** notes — per-note color themes (pastels plus editor schemes like Catppuccin and Tokyo Night), or a translucent material that shows
   the desktop through it.
 - **Roll-up** — double-click a note's title bar to collapse it to just the header.
 - **Raycast-style search palette** — a floating, centered command palette to search/open/delete
