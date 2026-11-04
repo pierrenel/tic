@@ -74,6 +74,24 @@ struct TaskNoteTests {
         #expect(!RichNote.adaptNeutralColors(text))   // already adapted: nothing to do
     }
 
+    @Test("pasted HTML arrives uncoloured and takes the adaptive ink; its links keep their colour")
+    func adaptPastedHTML() throws {
+        let html = #"<b>Update</b> <span style="color:#000000">gdocs</span> <a href="https://x.com">here</a>"#
+        let pasted = try NSAttributedString(
+            data: Data(html.utf8),
+            options: [.documentType: NSAttributedString.DocumentType.html,
+                      .characterEncoding: String.Encoding.utf8.rawValue],
+            documentAttributes: nil)
+        let text = NSMutableAttributedString(attributedString: pasted)
+        #expect(RichNote.adaptNeutralColors(text))
+        let full = NSRange(location: 0, length: text.length)
+        text.enumerateAttribute(.foregroundColor, in: full) { value, range, _ in
+            let isLink = text.attribute(.link, at: range.location, effectiveRange: nil) != nil
+            let color = value as? NSColor
+            if isLink { #expect(color != .labelColor) } else { #expect(color == .labelColor) }
+        }
+    }
+
     @Test("an image-only note is not empty")
     func imageOnlyNote() {
         let attachment = NSTextAttachment()

@@ -66,17 +66,19 @@ enum RichNote {
 
     /// Makes neutral text follow light/dark mode. RTF stores colours as fixed RGB, so text typed in
     /// one appearance (`labelColor` resolved at save) or pasted from a document (explicit black) would
-    /// otherwise stay black on the dark popover, or white on the light one. Near-black / near-white
-    /// greys become `labelColor`, and neutral page-like highlights are dropped; real colours (red text,
-    /// a yellow highlight) are kept. Returns whether anything changed.
+    /// otherwise stay black on the dark popover, or white on the light one. Text with no colour at all
+    /// — what pasted HTML (web pages, Google Docs) arrives as — draws black too. Uncoloured text and
+    /// near-black / near-white greys become `labelColor`, and neutral page-like highlights are dropped;
+    /// real colours (red text, a yellow highlight) are kept. Returns whether anything changed.
     @discardableResult
     static func adaptNeutralColors(_ text: NSMutableAttributedString) -> Bool {
         let full = NSRange(location: 0, length: text.length)
         var foreground: [NSRange] = []
         var background: [NSRange] = []
         text.enumerateAttribute(.foregroundColor, in: full) { value, range, _ in
-            guard let color = value as? NSColor, color != .labelColor, isNeutral(color, extreme: 0.25)
-            else { return }
+            if let color = value as? NSColor {
+                guard color != .labelColor, isNeutral(color, extreme: 0.25) else { return }
+            }
             foreground.append(range)
         }
         text.enumerateAttribute(.backgroundColor, in: full) { value, range, _ in
