@@ -142,6 +142,11 @@ struct TaskRowView: View {
                 Image(systemName: "star.fill")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(theme.accent)
+                    // Centre the star on the text's cap height rather than sitting it on the baseline,
+                    // where a small symbol reads as low next to the 13pt task text.
+                    .alignmentGuide(.firstTextBaseline) { d in
+                        d[VerticalAlignment.center] + NSFont.preferredFont(forTextStyle: .body).capHeight / 2
+                    }
                     .help("To do today — double-click the task to unmark")
                     .transition(.scale.combined(with: .opacity))
             }
