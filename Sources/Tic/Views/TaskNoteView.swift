@@ -64,6 +64,42 @@ enum RichNote {
                               documentAttributes: [.documentType: NSAttributedString.DocumentType.rtfd])
     }
 
+    /// Makes neutral text follow light/dark mode. RTF stores colours as fixed RGB, so text typed in
+    /// one appearance (`labelColor` resolved at save) or pasted from a document (explicit black) would
+    /// otherwise stay black on the dark popover, or white on the light one. Near-black / near-white
+    /// greys become `labelColor`, and neutral page-like highlights are dropped; real colours (red text,
+    /// a yellow highlight) are kept. Returns whether anything changed.
+    @discardableResult
+    static func adaptNeutralColors(_ text: NSMutableAttributedString) -> Bool {
+        let full = NSRange(location: 0, length: text.length)
+        var foreground: [NSRange] = []
+        var background: [NSRange] = []
+        text.enumerateAttribute(.foregroundColor, in: full) { value, range, _ in
+            guard let color = value as? NSColor, color != .labelColor, isNeutral(color, extreme: 0.25)
+            else { return }
+            foreground.append(range)
+        }
+        text.enumerateAttribute(.backgroundColor, in: full) { value, range, _ in
+            guard let color = value as? NSColor, isNeutral(color, extreme: 0.12) else { return }
+            background.append(range)
+        }
+        guard !foreground.isEmpty || !background.isEmpty else { return false }
+        text.beginEditing()
+        for range in foreground { text.addAttribute(.foregroundColor, value: NSColor.labelColor, range: range) }
+        for range in background { text.removeAttribute(.backgroundColor, range: range) }
+        text.endEditing()
+        return true
+    }
+
+    /// A grey (or black/white) whose brightness is within `extreme` of either end.
+    private static func isNeutral(_ color: NSColor, extreme: CGFloat) -> Bool {
+        guard let rgb = color.usingColorSpace(.sRGB) else { return false }
+        let hi = max(rgb.redComponent, rgb.greenComponent, rgb.blueComponent)
+        let lo = min(rgb.redComponent, rgb.greenComponent, rgb.blueComponent)
+        guard hi - lo < 0.08 else { return false }   // has a hue: a deliberate colour
+        return hi <= extreme || lo >= 1 - extreme
+    }
+
     static func isEmpty(_ text: NSAttributedString) -> Bool {
         var hasAttachment = false
         text.enumerateAttribute(.attachment, in: NSRange(location: 0, length: text.length)) { value, _, stop in
@@ -98,6 +134,7 @@ private struct RichNoteEditor: NSViewRepresentable {
         text.isAutomaticDashSubstitutionEnabled = false
         text.isAutomaticTextReplacementEnabled = false
         text.textStorage?.setAttributedString(initial)
+        if let storage = text.textStorage { RichNote.adaptNeutralColors(storage) }
         text.delegate = context.coordinator
         context.coordinator.textView = text
         context.coordinator.fitAttachments()
@@ -130,6 +167,8 @@ private struct RichNoteEditor: NSViewRepresentable {
 
         func textDidChange(_ notification: Notification) {
             dirty = true
+            // Pasted text arrives with its document's black (or white) ink; make it follow the appearance.
+            if let storage = textView?.textStorage { RichNote.adaptNeutralColors(storage) }
             fitAttachments()
             pending?.cancel()
             pending = Task { @MainActor [weak self] in

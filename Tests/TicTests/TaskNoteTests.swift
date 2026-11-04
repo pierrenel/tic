@@ -51,6 +51,29 @@ struct TaskNoteTests {
         #expect(RichNote.isEmpty(NSAttributedString(string: "")))
     }
 
+    @Test("neutral black/white ink follows the appearance; real colours and highlights stay")
+    func adaptNeutralColors() throws {
+        let text = NSMutableAttributedString()
+        text.append(NSAttributedString(string: "black ", attributes: [.foregroundColor: NSColor.black]))
+        text.append(NSAttributedString(string: "white ", attributes: [
+            .foregroundColor: NSColor(srgbRed: 0.98, green: 0.98, blue: 0.98, alpha: 1),
+            .backgroundColor: NSColor.white,
+        ]))
+        text.append(NSAttributedString(string: "red ", attributes: [.foregroundColor: NSColor.systemRed]))
+        text.append(NSAttributedString(string: "mark", attributes: [.backgroundColor: NSColor.systemYellow]))
+
+        #expect(RichNote.adaptNeutralColors(text))
+        func attr(_ key: NSAttributedString.Key, at i: Int) -> NSColor? {
+            text.attribute(key, at: i, effectiveRange: nil) as? NSColor
+        }
+        #expect(attr(.foregroundColor, at: 0) == .labelColor)
+        #expect(attr(.foregroundColor, at: 6) == .labelColor)
+        #expect(attr(.backgroundColor, at: 6) == nil)
+        #expect(attr(.foregroundColor, at: 12) == .systemRed)
+        #expect(attr(.backgroundColor, at: 16) == .systemYellow)
+        #expect(!RichNote.adaptNeutralColors(text))   // already adapted: nothing to do
+    }
+
     @Test("an image-only note is not empty")
     func imageOnlyNote() {
         let attachment = NSTextAttachment()
